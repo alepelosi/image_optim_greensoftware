@@ -15,3 +15,5 @@ Makefile
 
 /analysis/
 /.analysis_variants.yml
+/vendor/
+.DS_Store
