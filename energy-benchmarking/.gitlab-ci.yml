@@ -1,0 +1,41 @@
+async:
+  tags: [energy]
+  image: gitea.bitpowder.eu/builder/rust-stable-amd64:main
+  script:
+    - cargo run --bin async
+    - cat energy-bench/*.csv
+
+metadata:
+  tags: [energy]
+  image: gitea.bitpowder.eu/builder/rust-stable-amd64:main
+  script:
+    - cargo run --bin metadata
+    - cat energy-bench/*.csv
+
+minimal:
+  tags: [energy]
+  image: gitea.bitpowder.eu/builder/rust-stable-amd64:main
+  script:
+    - cargo run --bin minimal
+    - cat energy-bench/*.csv
+
+options:
+  tags: [energy]
+  image: gitea.bitpowder.eu/builder/rust-stable-amd64:main
+  script:
+    - cargo run --bin options
+    - cat energy-bench/*.csv
+
+overhead:
+  tags: [energy]
+  image: gitea.bitpowder.eu/builder/rust-stable-amd64:main
+  script:
+    - cargo run --bin overhead
+    - cat energy-bench/*.csv
+
+serverclient:
+  tags: [energy]
+  image: gitea.bitpowder.eu/builder/rust-stable-amd64:main
+  script:
+    - cargo run --bin serverclient
+    - cat energy-bench/*.csv

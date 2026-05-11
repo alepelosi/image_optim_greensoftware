@@ -1,0 +1,36 @@
+[package]
+name = "example"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "async"
+path = "src/async.rs"
+
+[[bin]]
+name = "minimal"
+path = "src/minimal.rs"
+
+[[bin]]
+name = "options"
+path = "src/options.rs"
+
+[[bin]]
+name = "metadata"
+path = "src/metadata.rs"
+
+[[bin]]
+name = "overhead"
+path = "src/overhead.rs"
+
+[[bin]]
+name = "serverclient"
+path = "src/serverclient.rs"
+
+[[bin]]
+name = "image_optim"
+path = "src/image_optim.rs"
+
+[dependencies]
+energy-bench = { path = "../energy-bench" }
+tokio = { version = "1.50.0", features = ["rt-multi-thread"] }

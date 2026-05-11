@@ -1,0 +1,40 @@
+[package]
+name = "energy-bench"
+version = "0.2.5"
+edition = "2024"
+categories = ["development-tools::profiling"]
+keywords = ["benchmarking", "energy", "sustainability"]
+description = "Methods for benchmarking the energy consumption of programs."
+repository = "https://gitlab.com/software-energy-lab/energy-benchmarking"
+license = "GPL-3.0"
+readme = "../README.md"
+
+[lib]
+name = "energy_bench"
+path = "src/lib.rs"
+
+[[bin]]
+name = "energy-bench"
+path = "src/bin.rs"
+
+[features]
+default = ["software-energy-lab"]
+software-energy-lab = ["dep:libmedium", "dep:nvml-wrapper", "dep:reqwest", "dep:serde"]
+
+[dependencies]
+chrono = "0.4.44"
+clap = { version = "4.6.0", features = ["derive"] }
+csv = "1.4.0"
+file-backed-value = "0.1.1"
+gethostname = "1.1.0"
+humantime = "2.3.0"
+indexmap = { version = "2.13.0", features = ["serde"] }
+log = "0.4.29"
+rapl-energy = "0.1.25"
+sanitize-filename = "0.6.0"
+statistical = "1.0.0"
+# Software Energy Lab dependencies
+libmedium = { version = "0.13.4", optional = true }
+nvml-wrapper = { version = "0.12.0", optional = true }
+reqwest = { version = "0.13.2", features = ["blocking", "json"], optional = true }
+serde = { version = "1.0.228", features = ["derive"], optional = true }
