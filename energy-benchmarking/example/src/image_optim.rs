@@ -6,7 +6,7 @@ use energy_bench::{EnergyBench, EnergyBenchConfig};
 const REPO_PATH: &str = "/home/alessandro/Desktop/Uni/GreenSoftware/image_optim_greensoftware";
 const BENCH_DIR: &str = "runs/bench";
 
-// Empty means: use all installed/relevant optimizers.
+// Empty means: use all installed/relevant optimizers in the full setup.
 const BASE_FLAGS: &[&str] = &[];
 
 fn run_command(args: &[&str]) -> Result<(), String> {
@@ -53,27 +53,28 @@ fn check_environment() -> Result<(), String> {
     run_command_print(&["ls", "-lh", "./bin/image_optim"])?;
 
     println!("Checking datasets...");
-    run_command_print(&["bash", "-lc", "find test_images -type f | wc -l"])?;
-    run_command_print(&["bash", "-lc", "find black_dataset -type f | wc -l"])?;
-    run_command_print(&["bash", "-lc", "find noisy_gifs -type f | wc -l"])?;
+    run_command_print(&["bash", "-lc", "echo -n 'test_images: '; find test_images -type f | wc -l"])?;
+    run_command_print(&["bash", "-lc", "echo -n 'black_dataset: '; find black_dataset -type f | wc -l"])?;
+    run_command_print(&["bash", "-lc", "echo -n 'white_dataset: '; find white_dataset -type f | wc -l"])?;
+    run_command_print(&["bash", "-lc", "echo -n 'noisy_gifs: '; find noisy_gifs -type f | wc -l"])?;
 
     println!("Checking available optimizers...");
-    run_command_print(&["bash", "-lc", "command -v svgo || true"])?;
-    run_command_print(&["bash", "-lc", "command -v pngout || true"])?;
-    run_command_print(&["bash", "-lc", "command -v optipng || true"])?;
-    run_command_print(&["bash", "-lc", "command -v pngcrush || true"])?;
-    run_command_print(&["bash", "-lc", "command -v advpng || true"])?;
-    run_command_print(&["bash", "-lc", "command -v pngquant || true"])?;
-    run_command_print(&["bash", "-lc", "command -v jpegoptim || true"])?;
-    run_command_print(&["bash", "-lc", "command -v jpegtran || true"])?;
-    run_command_print(&["bash", "-lc", "command -v gifsicle || true"])?;
+    run_command_print(&["bash", "-lc", "echo -n 'svgo: '; command -v svgo || true"])?;
+    run_command_print(&["bash", "-lc", "echo -n 'pngout: '; command -v pngout || true"])?;
+    run_command_print(&["bash", "-lc", "echo -n 'optipng: '; command -v optipng || true"])?;
+    run_command_print(&["bash", "-lc", "echo -n 'pngcrush: '; command -v pngcrush || true"])?;
+    run_command_print(&["bash", "-lc", "echo -n 'advpng: '; command -v advpng || true"])?;
+    run_command_print(&["bash", "-lc", "echo -n 'pngquant: '; command -v pngquant || true"])?;
+    run_command_print(&["bash", "-lc", "echo -n 'jpegoptim: '; command -v jpegoptim || true"])?;
+    run_command_print(&["bash", "-lc", "echo -n 'jpegtran: '; command -v jpegtran || true"])?;
+    run_command_print(&["bash", "-lc", "echo -n 'gifsicle: '; command -v gifsicle || true"])?;
 
     println!("Environment check completed.");
     Ok(())
 }
 
 fn prepare_input(dataset_dir: &str) {
-    // SETUP PHASE: this should not be counted by benchmark_with.
+    // SETUP PHASE: not part of the measured benchmark when using benchmark_with.
     run_command(&["rm", "-rf", BENCH_DIR])
         .expect("Failed to remove old benchmark directory");
 
@@ -101,124 +102,85 @@ fn run_image_optim(extra_flags: &[&str]) -> Result<(), String> {
 }
 
 fn cleanup_input() {
-    // CLEANUP PHASE: this should not be counted by benchmark_with.
+    // CLEANUP PHASE: not part of the measured benchmark when using benchmark_with.
     let _ = run_command(&["rm", "-rf", BENCH_DIR]);
 }
 
-fn bench_test_images(config: EnergyBenchConfig) {
-    let mut bench = EnergyBench::new("image_optim_test_images_measurements", config);
+fn bench_image_dataset(config: EnergyBenchConfig, bench_name: &str, dataset_dir: &'static str) {
+    let mut bench = EnergyBench::new(bench_name, config);
 
     bench.benchmark_with(
         "full_all_optimizers",
-        &|| prepare_input("test_images"),
+        &|| prepare_input(dataset_dir),
         &|_| run_image_optim(&[]),
         &|_| cleanup_input(),
     );
 
     bench.benchmark_with(
+        "no_svgo",
+        &|| prepare_input(dataset_dir),
+        &|_| run_image_optim(&["--no-svgo"]),
+        &|_| cleanup_input(),
+    );
+
+    bench.benchmark_with(
+        "no_pngout",
+        &|| prepare_input(dataset_dir),
+        &|_| run_image_optim(&["--no-pngout"]),
+        &|_| cleanup_input(),
+    );
+
+    bench.benchmark_with(
         "no_optipng",
-        &|| prepare_input("test_images"),
+        &|| prepare_input(dataset_dir),
         &|_| run_image_optim(&["--no-optipng"]),
         &|_| cleanup_input(),
     );
 
     bench.benchmark_with(
         "no_pngcrush",
-        &|| prepare_input("test_images"),
+        &|| prepare_input(dataset_dir),
         &|_| run_image_optim(&["--no-pngcrush"]),
         &|_| cleanup_input(),
     );
 
     bench.benchmark_with(
         "no_advpng",
-        &|| prepare_input("test_images"),
+        &|| prepare_input(dataset_dir),
         &|_| run_image_optim(&["--no-advpng"]),
         &|_| cleanup_input(),
     );
 
     bench.benchmark_with(
         "no_pngquant",
-        &|| prepare_input("test_images"),
+        &|| prepare_input(dataset_dir),
         &|_| run_image_optim(&["--no-pngquant"]),
         &|_| cleanup_input(),
     );
 
     bench.benchmark_with(
         "no_jpegoptim",
-        &|| prepare_input("test_images"),
+        &|| prepare_input(dataset_dir),
         &|_| run_image_optim(&["--no-jpegoptim"]),
         &|_| cleanup_input(),
     );
 
     bench.benchmark_with(
         "no_jpegtran",
-        &|| prepare_input("test_images"),
+        &|| prepare_input(dataset_dir),
         &|_| run_image_optim(&["--no-jpegtran"]),
         &|_| cleanup_input(),
     );
 
     bench.benchmark_with(
         "no_gifsicle",
-        &|| prepare_input("test_images"),
+        &|| prepare_input(dataset_dir),
         &|_| run_image_optim(&["--no-gifsicle"]),
         &|_| cleanup_input(),
     );
 }
 
-fn bench_black_dataset(config: EnergyBenchConfig) {
-    let mut bench = EnergyBench::new("image_optim_black_dataset_measurements", config);
-
-    bench.benchmark_with(
-        "full_all_optimizers",
-        &|| prepare_input("black_dataset"),
-        &|_| run_image_optim(&[]),
-        &|_| cleanup_input(),
-    );
-
-    bench.benchmark_with(
-        "no_optipng",
-        &|| prepare_input("black_dataset"),
-        &|_| run_image_optim(&["--no-optipng"]),
-        &|_| cleanup_input(),
-    );
-
-    bench.benchmark_with(
-        "no_pngcrush",
-        &|| prepare_input("black_dataset"),
-        &|_| run_image_optim(&["--no-pngcrush"]),
-        &|_| cleanup_input(),
-    );
-
-    bench.benchmark_with(
-        "no_advpng",
-        &|| prepare_input("black_dataset"),
-        &|_| run_image_optim(&["--no-advpng"]),
-        &|_| cleanup_input(),
-    );
-
-    bench.benchmark_with(
-        "no_pngquant",
-        &|| prepare_input("black_dataset"),
-        &|_| run_image_optim(&["--no-pngquant"]),
-        &|_| cleanup_input(),
-    );
-
-    bench.benchmark_with(
-        "no_jpegoptim",
-        &|| prepare_input("black_dataset"),
-        &|_| run_image_optim(&["--no-jpegoptim"]),
-        &|_| cleanup_input(),
-    );
-
-    bench.benchmark_with(
-        "no_jpegtran",
-        &|| prepare_input("black_dataset"),
-        &|_| run_image_optim(&["--no-jpegtran"]),
-        &|_| cleanup_input(),
-    );
-}
-
-fn bench_noisy_gifs(config: EnergyBenchConfig) {
+fn bench_gif_dataset(config: EnergyBenchConfig) {
     let mut bench = EnergyBench::new("image_optim_noisy_gifs_measurements", config);
 
     bench.benchmark_with(
@@ -249,7 +211,23 @@ fn main() {
         ..EnergyBenchConfig::default()
     };
 
-    bench_test_images(config.clone());
-    bench_black_dataset(config.clone());
-    bench_noisy_gifs(config);
+    bench_image_dataset(
+        config.clone(),
+        "image_optim_test_images_measurements",
+        "test_images",
+    );
+
+    bench_image_dataset(
+        config.clone(),
+        "image_optim_black_dataset_measurements",
+        "black_dataset",
+    );
+
+    bench_image_dataset(
+        config.clone(),
+        "image_optim_white_dataset_measurements",
+        "white_dataset",
+    );
+
+    bench_gif_dataset(config);
 }

@@ -17,3 +17,5 @@ Makefile
 /.analysis_variants.yml
 /vendor/
 .DS_Store
+
+energy-benchmarking/example/energy-bench
