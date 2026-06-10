@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use energy_bench::{EnergyBench, EnergyBenchConfig};
 
-const REPO_PATH: &str = "/home/alessandro/Desktop/Uni/GreenSoftware/image_optim_greensoftware";
+const REPO_PATH: &str = "/home/alessandro/Desktop/Uni/GreenSoftware/optimization1";
 const BENCH_DIR: &str = "runs/bench";
 
 // Empty means: use all installed/relevant optimizers in the full setup.
