@@ -143,6 +143,45 @@ describe ImageOptim do
         expect(image_optim.optimize_image(path)).to be_an(ImageOptim::OptimizedPath)
       end
     end
+
+    it 'stops late workers after a minimal additional gain' do
+      image_optim = ImageOptim.new(isolated_options_base)
+      workers = Array.new(2) do
+        instance_double(ImageOptim::Worker, run_order: 2)
+      end
+      path = test_images.first
+
+      allow(image_optim).to receive(:workers_for_image).and_return(workers)
+      allow(workers[0]).to receive(:optimize) do |src, dst, _options|
+        dst.binwrite('x' * src.size)
+        true
+      end
+      expect(workers[1]).not_to receive(:optimize)
+
+      expect(image_optim.optimize_image(path)).to be_an(ImageOptim::OptimizedPath)
+    end
+  end
+
+  describe '#adaptive_thread_count' do
+    let(:image_optim){ ImageOptim.new(isolated_options_base.merge(threads: 8)) }
+
+    it 'caps tiny image batches to two threads' do
+      images = Array.new(3){ instance_double(ImageOptim::Path, size: 10 * 1024) }
+
+      expect(image_optim.send(:adaptive_thread_count, images)).to eq(2)
+    end
+
+    it 'caps medium image batches to four threads' do
+      images = Array.new(3){ instance_double(ImageOptim::Path, size: 500 * 1024) }
+
+      expect(image_optim.send(:adaptive_thread_count, images)).to eq(4)
+    end
+
+    it 'keeps the configured thread count for large image batches' do
+      images = Array.new(3){ instance_double(ImageOptim::Path, size: 2 * 1024 * 1024) }
+
+      expect(image_optim.send(:adaptive_thread_count, images)).to eq(8)
+    end
   end
 
   describe '#optimize_image!' do

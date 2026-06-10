@@ -29,11 +29,19 @@ describe ImageOptim::Config do
   describe '#nice' do
     before do
       allow(IOConfig).to receive(:read_options).and_return({})
+      allow_any_instance_of(IOConfig).to receive(:on_battery?).and_return(false)
     end
 
     it 'is 10 by default' do
       config = IOConfig.new({})
       expect(config.nice).to eq(10)
+    end
+
+    it 'is 15 by default on battery power' do
+      config = IOConfig.new({})
+      allow(config).to receive(:on_battery?).and_return(true)
+
+      expect(config.nice).to eq(15)
     end
 
     it 'is 0 if disabled' do

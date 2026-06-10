@@ -94,6 +94,7 @@ class ImageOptim
 
     # Nice level:
     # * `10` by default and for `nil` or `true`
+    # * `15` by default when running on battery power
     # * `0` for `false`
     # * otherwise convert to integer
     def nice
@@ -101,7 +102,7 @@ class ImageOptim
 
       case nice
       when true, nil
-        10
+        on_battery? ? 15 : 10
       when false
         0
       else
@@ -238,6 +239,28 @@ class ImageOptim
         warn "Unknown architecture (#{host_os}) assuming one processor."
         1
       end.to_i
+    end
+
+    def on_battery?
+      linux_on_battery? || macos_on_battery?
+    rescue SystemCallError
+      false
+    end
+
+    def linux_on_battery?
+      Dir.glob('/sys/class/power_supply/BAT*/status').any? do |path|
+        %w[Discharging Not\ charging].include?(File.read(path).strip)
+      rescue SystemCallError
+        false
+      end
+    end
+
+    def macos_on_battery?
+      return false unless RUBY_PLATFORM.include?('darwin')
+
+      Cmd.capture('pmset -g batt').include?('Battery Power')
+    rescue SignalException
+      false
     end
   end
 end

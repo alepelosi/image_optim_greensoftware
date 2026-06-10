@@ -26,6 +26,12 @@ end
 
 # Main interface
 class ImageOptim
+  SMALL_IMAGE_SIZE = 100 * 1024
+  MEDIUM_IMAGE_SIZE = 1024 * 1024
+  SMALL_IMAGE_THREADS = 2
+  MEDIUM_IMAGE_THREADS = 4
+  MIN_WORKER_GAIN_RATIO = 0.01
+
   # Nice level
   attr_reader :nice
 
@@ -63,8 +69,9 @@ class ImageOptim
   #
   #     ImageOptim.new(:advpng => {:level => 3}, :optipng => {:level => 2})
   #
-  # use :threads to set number of parallel optimizers to run (passing true or
-  # nil determines number of processors, false disables parallel processing)
+  # use :threads to set maximum number of parallel optimizers to run (passing
+  # true or nil determines number of processors, false disables parallel
+  # processing)
   #
   #     ImageOptim.new(:threads => 8)
   #
@@ -119,13 +126,28 @@ class ImageOptim
 
     optimized = @cache.fetch(original) do
       timer = timeout && Timer.new(timeout)
+      minimum_gain = minimum_worker_gain(original)
+      previous_size = original.size
 
       Handler.for(original) do |handler|
         begin
           workers.each do |worker|
+            stop_after_worker = false
+
             handler.process do |src, dst|
-              worker.optimize(src, dst, timeout: timer)
+              optimized_by_worker = worker.optimize(src, dst, timeout: timer)
+
+              if optimized_by_worker && (dst_size = dst.size?)
+                current_gain = previous_size - dst_size
+                stop_after_worker = worker.run_order > 0 &&
+                  current_gain < minimum_gain
+                previous_size = dst_size
+              end
+
+              optimized_by_worker
             end
+
+            break if stop_after_worker
           end
         rescue Errors::TimeoutExceeded
           handler.result
@@ -289,10 +311,71 @@ private
 
   # Apply threading if threading is allowed
   def apply_threading(enum)
-    if threads > 1
-      enum.in_threads(threads)
+    thread_count = adaptive_thread_count(enum)
+
+    if thread_count > 1
+      enum.in_threads(thread_count)
     else
       enum
     end
+  end
+
+  def adaptive_thread_count(enum)
+    return threads if threads <= 1
+
+    average_size = average_item_size(enum)
+    return threads unless average_size
+
+    if average_size < SMALL_IMAGE_SIZE
+      [threads, SMALL_IMAGE_THREADS].min
+    elsif average_size < MEDIUM_IMAGE_SIZE
+      [threads, MEDIUM_IMAGE_THREADS].min
+    else
+      threads
+    end
+  end
+
+  def average_item_size(enum)
+    source = source_enum(enum)
+    return unless source.respond_to?(:each)
+
+    total = 0
+    count = 0
+
+    source.each do |item|
+      size = item_size(item)
+      next unless size
+
+      total += size
+      count += 1
+    end
+
+    total / count.to_f unless count.zero?
+  end
+
+  def source_enum(enum)
+    if enum.instance_variable_defined?(:@enum)
+      enum.instance_variable_get(:@enum)
+    else
+      enum
+    end
+  end
+
+  def item_size(item)
+    if item.respond_to?(:to_path) && File.file?(item.to_path)
+      File.size(item.to_path)
+    elsif item.is_a?(String) && File.file?(item)
+      File.size(item)
+    elsif item.respond_to?(:size)
+      item.size
+    elsif File.file?(item.to_s)
+      File.size(item.to_s)
+    end
+  rescue SystemCallError
+    nil
+  end
+
+  def minimum_worker_gain(original)
+    original.size * MIN_WORKER_GAIN_RATIO
   end
 end

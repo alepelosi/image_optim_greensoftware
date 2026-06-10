@@ -326,8 +326,8 @@ pngout       50  426.706   444.679    1.042
 
 ## Options
 
-* `:nice` — Nice level, priority of all used tools with higher value meaning lower priority, in range `-20..19`, negative values can be set only if run by root user *(defaults to `10`)*
-* `:threads` — Number of threads or disable *(defaults to number of processors)*
+* `:nice` — Nice level, priority of all used tools with higher value meaning lower priority, in range `-20..19`, negative values can be set only if run by root user *(defaults to `10`, or `15` on battery power)*
+* `:threads` — Maximum number of threads or disable; small and medium image batches may use fewer threads to reduce scheduling and CPU overhead *(defaults to number of processors)*
 * `:verbose` — Verbose output *(defaults to `false`)*
 * `:pack` — Require image\_optim\_pack or disable it, by default image\_optim\_pack will be used if available, will turn on `:skip-missing-workers` unless explicitly disabled *(defaults to `nil`)*
 * `:skip_missing_workers` — Skip workers with missing or problematic binaries *(defaults to `false`)*

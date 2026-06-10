@@ -132,7 +132,7 @@ ImageOptim::Runner::OptionParser::DEFINE = proc do |op, options|
     options[:show_progress] = show_progress
   end
 
-  op.on('--[no-]threads N', Integer, 'Number of threads or disable (defaults to number of processors)') do |threads|
+  op.on('--[no-]threads N', Integer, 'Maximum number of threads or disable (defaults to number of processors)') do |threads|
     options[:threads] = threads
   end
 
@@ -140,7 +140,7 @@ ImageOptim::Runner::OptionParser::DEFINE = proc do |op, options|
     '--[no-]nice N',
     Integer,
     'Nice level, priority of all used tools with higher value meaning lower priority, in range -20..19, negative ' \
-    'values can be set only if run by root user (defaults to 10)'
+    'values can be set only if run by root user (defaults to 10, or 15 on battery power)'
   ) do |nice|
     options[:nice] = nice
   end
