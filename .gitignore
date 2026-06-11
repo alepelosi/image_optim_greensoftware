@@ -19,3 +19,4 @@ Makefile
 .DS_Store
 
 energy-benchmarking/example/energy-bench
+/runs/image_optim_size_reductions.csv
