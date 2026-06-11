@@ -14,6 +14,21 @@ class ImageOptim
   class Config # rubocop:disable Metrics/ClassLength
     include OptionHelpers
 
+    GREEN_DEFAULT = true
+    GREEN_DEFAULT_THRESHOLD = 0.50
+    GREEN_DEFAULT_TIMEOUT = 30.0
+    GREEN_DEFAULT_MAX_THREADS = 2
+
+    GREEN_WORKER_DEFAULTS = {
+      advpng: false,
+      pngout: false,
+      pngcrush: false,
+      optipng: {level: 2}.freeze,
+      oxipng: {level: 2}.freeze,
+      gifsicle: {interlace: false}.freeze,
+      jpegtran: {jpegrescan: false}.freeze,
+    }.freeze
+
     # Global config path at `$XDG_CONFIG_HOME/image_optim.yml` (by default
     # `~/.config/image_optim.yml`)
     GLOBAL_PATH = File.join(ENV.fetch('XDG_CONFIG_HOME', '~/.config'), 'image_optim.yml')
@@ -111,14 +126,20 @@ class ImageOptim
 
     # Number of parallel threads:
     # * `processor_count` by default and for `nil` or `true`
+    # * `2` by default in green mode
     # * `1` for `false`
     # * otherwise convert to integer
     def threads
+      threads_configured = key?(:threads)
       threads = get!(:threads)
 
       case threads
       when true, nil
-        processor_count
+        if green && !threads_configured
+          [processor_count, GREEN_DEFAULT_MAX_THREADS].min
+        else
+          processor_count
+        end
       when false
         1
       else
@@ -128,10 +149,29 @@ class ImageOptim
 
     # Timeout in seconds for each image:
     # * not set by default and for `nil`
+    # * `30` by default in green mode
     # * otherwise converted to float
     def timeout
+      timeout_configured = key?(:timeout)
       timeout = get!(:timeout)
-      timeout ? timeout.to_f : nil
+
+      if timeout_configured
+        timeout ? timeout.to_f : nil
+      elsif green
+        GREEN_DEFAULT_TIMEOUT
+      end
+    end
+
+    # Green mode, converted to boolean. Enabled by default in this branch so
+    # the unchanged benchmark script measures the green profile.
+    def green # rubocop:disable Naming/PredicateMethod
+      green = get!(:green)
+      key?(:green) ? !!green : GREEN_DEFAULT
+    end
+
+    def green_threshold
+      threshold = get!(:green_threshold)
+      threshold ? threshold.to_f : GREEN_DEFAULT_THRESHOLD
     end
 
     # Verbose mode, converted to boolean
@@ -184,7 +224,13 @@ class ImageOptim
     # * `false` for `false`
     # * otherwise fail with `ConfigurationError`
     def for_worker(klass)
-      worker_options = get!(klass.bin_sym)
+      worker_key = klass.bin_sym
+      worker_configured = key?(worker_key)
+      worker_options = get!(worker_key)
+
+      if green && !worker_configured && GREEN_WORKER_DEFAULTS.key?(worker_key)
+        worker_options = GREEN_WORKER_DEFAULTS.fetch(worker_key)
+      end
 
       case worker_options
       when Hash

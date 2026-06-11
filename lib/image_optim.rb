@@ -53,6 +53,12 @@ class ImageOptim
   # Timeout in seconds for each image
   attr_reader :timeout
 
+  # Green mode enabled?
+  attr_reader :green
+
+  # Stop launching workers once this reduction ratio is reached
+  attr_reader :green_threshold
+
   # Initialize workers, specify options using worker underscored name:
   #
   # pass false to disable worker
@@ -86,6 +92,8 @@ class ImageOptim
       cache_dir
       cache_worker_digests
       timeout
+      green
+      green_threshold
     ].each do |name|
       instance_variable_set(:"@#{name}", config.send(name))
       $stderr << "#{name}: #{send(name)}\n" if verbose
@@ -119,10 +127,13 @@ class ImageOptim
 
     optimized = @cache.fetch(original) do
       timer = timeout && Timer.new(timeout)
+      original_size = original.size
 
       Handler.for(original) do |handler|
         begin
           workers.each do |worker|
+            break if reduced_enough?(original_size, handler.result)
+
             handler.process do |src, dst|
               worker.optimize(src, dst, timeout: timer)
             end
@@ -294,5 +305,15 @@ private
     else
       enum
     end
+  end
+
+  def reduced_enough?(original_size, optimized)
+    return false unless green && optimized && original_size.positive?
+
+    optimized_size = optimized.size?
+    return false unless optimized_size
+
+    reduction_ratio = (original_size - optimized_size).to_f / original_size
+    reduction_ratio >= green_threshold
   end
 end

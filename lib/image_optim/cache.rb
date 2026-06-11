@@ -24,6 +24,10 @@ class ImageOptim
       @global_options = begin
         options = {}
         options[:timeout] = image_optim.timeout if image_optim.timeout
+        options[:green] = image_optim.green if image_optim.respond_to?(:green)
+        if image_optim.respond_to?(:green_threshold)
+          options[:green_threshold] = image_optim.green_threshold
+        end
         options.empty? ? '' : options.inspect
       end
     end

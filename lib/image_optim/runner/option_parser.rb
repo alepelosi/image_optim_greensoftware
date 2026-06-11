@@ -132,6 +132,18 @@ ImageOptim::Runner::OptionParser::DEFINE = proc do |op, options|
     options[:show_progress] = show_progress
   end
 
+  op.on('--[no-]green', 'Enable or disable the green worker profile') do |green|
+    options[:green] = green
+  end
+
+  op.on(
+    '--green-threshold N',
+    Float,
+    'Reduction ratio that stops remaining workers in green mode (defaults to 0.5)'
+  ) do |green_threshold|
+    options[:green_threshold] = green_threshold
+  end
+
   op.on('--[no-]threads N', Integer, 'Number of threads or disable (defaults to number of processors)') do |threads|
     options[:threads] = threads
   end

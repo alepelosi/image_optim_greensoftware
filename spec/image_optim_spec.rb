@@ -143,6 +143,21 @@ describe ImageOptim do
         expect(image_optim.optimize_image(path)).to be_an(ImageOptim::OptimizedPath)
       end
     end
+
+    it 'stops launching workers after green threshold is reached' do
+      image_optim = ImageOptim.new(isolated_options_base.merge(green_threshold: 0.5))
+      workers = Array.new(2){ instance_double(ImageOptim::Worker) }
+      path = test_images.first
+
+      allow(image_optim).to receive(:workers_for_image).and_return(workers)
+      allow(workers[0]).to receive(:optimize) do |src, dst, _options|
+        dst.binwrite('x' * (src.size * 0.4).to_i)
+        true
+      end
+      expect(workers[1]).not_to receive(:optimize)
+
+      expect(image_optim.optimize_image(path)).to be_an(ImageOptim::OptimizedPath)
+    end
   end
 
   describe '#optimize_image!' do

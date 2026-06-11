@@ -52,8 +52,14 @@ describe ImageOptim::Config do
       allow(IOConfig).to receive(:read_options).and_return({})
     end
 
-    it 'is processor_count by default' do
+    it 'is capped to 2 by default in green mode' do
       config = IOConfig.new({})
+      allow(config).to receive(:processor_count).and_return(13)
+      expect(config.threads).to eq(2)
+    end
+
+    it 'is processor_count by default when green mode is disabled' do
+      config = IOConfig.new(green: false)
       allow(config).to receive(:processor_count).and_return(13)
       expect(config.threads).to eq(13)
     end
@@ -74,14 +80,51 @@ describe ImageOptim::Config do
       allow(IOConfig).to receive(:read_options).and_return({})
     end
 
-    it 'is nil by default' do
+    it 'is 30 by default in green mode' do
       config = IOConfig.new({})
+      expect(config.timeout).to eq(30.0)
+    end
+
+    it 'is nil by default when green mode is disabled' do
+      config = IOConfig.new(green: false)
       expect(config.timeout).to eq(nil)
     end
 
     it 'converts value to a float' do
       config = IOConfig.new(timeout: '15.1')
       expect(config.timeout).to eq(15.1)
+    end
+  end
+
+  describe '#green' do
+    before do
+      allow(IOConfig).to receive(:read_options).and_return({})
+    end
+
+    it 'is true by default' do
+      config = IOConfig.new({})
+      expect(config.green).to be true
+    end
+
+    it 'can be disabled' do
+      config = IOConfig.new(green: false)
+      expect(config.green).to be false
+    end
+  end
+
+  describe '#green_threshold' do
+    before do
+      allow(IOConfig).to receive(:read_options).and_return({})
+    end
+
+    it 'is 0.5 by default' do
+      config = IOConfig.new({})
+      expect(config.green_threshold).to eq(0.5)
+    end
+
+    it 'converts value to a float' do
+      config = IOConfig.new(green_threshold: '0.75')
+      expect(config.green_threshold).to eq(0.75)
     end
   end
 
@@ -120,11 +163,51 @@ describe ImageOptim::Config do
           :abc
         end
       end)
+      {
+        'Advpng' => :advpng,
+        'Pngout' => :pngout,
+        'Pngcrush' => :pngcrush,
+        'Optipng' => :optipng,
+        'Oxipng' => :oxipng,
+        'Gifsicle' => :gifsicle,
+        'Jpegtran' => :jpegtran,
+      }.each do |name, bin_sym|
+        stub_const(name, Class.new do
+          define_singleton_method(:bin_sym){ bin_sym }
+        end)
+      end
     end
 
     it 'returns empty hash by default' do
       config = IOConfig.new({})
       expect(config.for_worker(Abc)).to eq({})
+    end
+
+    it 'uses green worker defaults' do
+      config = IOConfig.new({})
+      expect(config.for_worker(Advpng)).to eq(disable: true)
+      expect(config.for_worker(Pngout)).to eq(disable: true)
+      expect(config.for_worker(Pngcrush)).to eq(disable: true)
+      expect(config.for_worker(Optipng)).to eq(level: 2)
+      expect(config.for_worker(Oxipng)).to eq(level: 2)
+      expect(config.for_worker(Gifsicle)).to eq(interlace: false)
+      expect(config.for_worker(Jpegtran)).to eq(jpegrescan: false)
+    end
+
+    it 'keeps original worker defaults when green mode is disabled' do
+      config = IOConfig.new(green: false)
+      expect(config.for_worker(Optipng)).to eq({})
+      expect(config.for_worker(Pngout)).to eq({})
+    end
+
+    it 'allows explicitly enabling a green-disabled worker' do
+      config = IOConfig.new(optipng: true)
+      expect(config.for_worker(Optipng)).to eq({})
+    end
+
+    it 'allows explicit options for a green-defaulted worker' do
+      config = IOConfig.new(optipng: {level: 3})
+      expect(config.for_worker(Optipng)).to eq(level: 3)
     end
 
     it 'returns passed hash' do

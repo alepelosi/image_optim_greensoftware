@@ -63,6 +63,26 @@ describe ImageOptim::Runner::OptionParser do
       end
     end
 
+    describe 'green options' do
+      it 'parses --green' do
+        args = %w[--green foo]
+        expect(OptionParser.parse!(args)).to eq(green: true)
+        expect(args).to eq(%w[foo])
+      end
+
+      it 'parses --no-green' do
+        args = %w[--no-green foo]
+        expect(OptionParser.parse!(args)).to eq(green: false)
+        expect(args).to eq(%w[foo])
+      end
+
+      it 'parses --green-threshold' do
+        args = %w[--green-threshold 0.75 foo]
+        expect(OptionParser.parse!(args)).to eq(green_threshold: 0.75)
+        expect(args).to eq(%w[foo])
+      end
+    end
+
     describe 'help option' do
       it 'prints help text to stdout and exits' do
         parser = OptionParser.new({})
